@@ -1,0 +1,7 @@
+I treni delle Ferrovie dello Stato non son sempre in orario (!).
+Questo script controlla il presunto orario di arrivo di un 
+treno ad una stazione specifica.
+
+Lo script provvede ad inviare una email di notifica sullo stato
+del treno.
+
