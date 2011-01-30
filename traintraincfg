@@ -1,0 +1,7 @@
+[MAIL]
+SMTPSERVER = "smtp.example.com"
+SMTPUSER = "sender@example.com"
+SMTPPASS = "password"
+FROMADDR = "sender@example.com"
+TOADDRS = "receiver1@example.com","receiver2@example.com"
+SUBJECT = "Train-train: "
