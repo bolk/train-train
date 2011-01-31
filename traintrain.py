@@ -42,7 +42,7 @@ class TrainTrain (object):
 		locale.setlocale(locale.LC_ALL, 'it_IT.UTF-8')
 		data = self._getTrainInfo(trainid)
 		if data != []:
-			wait = self._checkStatus(data, stationname, threshold)
+			wait = self._checkStatus(trainid, data, stationname, threshold)
 			if wait > threshold:
 				time.sleep(wait*1000*60)
 				checkTrain(trainid, stationname, threshold)
@@ -117,45 +117,44 @@ class TrainTrain (object):
 			diff = 0
 		return diff
 
-	def _checkStatus(self, data, stationname, threshold):
-		self.TOADDRS = self.config.get("EMAIL","TOADDR").split(",")
-		self.SUBJECT = self.config.get("EMAIL","SUBJECT")
-		self.MSG = ("From: %s\r\nTo: %s\r\nSubject: %s" % (FROMADDR, TOADDRS, SUBJECT))
+	def _checkStatus(self, trainid, data, stationname, threshold):
+		self.TO = self.config.get("SMTP","TO").split(",")
+		self.FROM = self.config.get("SMTP","FROM")
+		self.SUBJECT = self.config.get("SMTP","SUBJECT")
+		self.MSG = ("From: %s\r\nTo: %s\r\n" % (self.FROM, self.TO))
 		for t in data:
 			if t[0] == stationname:
-				late = t[3]
-				due = t[2]
-				real = t[1]
-				est = t[4]
+				status = {'ritardo':t[3],'late':t[3],'due':t[2],'real':t[1],'est':t[4],'stazione':stationname,'treno':trainid}
 				break
+		# oggetto
+		msg = self.MSG + ("Subject: %s\n\r" % self.SUBJECT)
 		if t[4] == 'eff':
-			msg = self.MSG + "GULP! GASP! IL TRENO E' PASSATO ALLE " + due + "\n\r\n\rSIGH"
+			msg = msg + "GULP! GASP! IL TRENO E' PASSATO ALLE " + status['due'] + "\n\r\n\rSIGH"
 		else:
-			if late < 0:
-				msg = self.MSG + "Treno in anticipo di " + str(late * -1) + " minuti (" + due + ")\n\r\n\rBuon viaggio"
+			if status['late'] < 0:
+				msg = msg + "Treno in anticipo di " + str(status['late'] * -1) + " minuti (" + status['due'] + ")\n\r\n\rBuon viaggio"
 			elif late > threshold:
-				msg = self.MSG + "Treno in ritardo di " + str(late) + " minuti (" + due + ")\n\r\n\rBuona attesa"
+				msg = msg + "Treno in ritardo di " + str(status['late']) + " minuti (" + status['due'] + ")\n\r\n\rBuona attesa"
 			else:
-				msg = self.MSG + "Treno nei limiti della norma " + str(late) + " minuti di ritardo (" + due + ").\n\r\n\rBuon viaggio"			
+				msg = msg + "Treno nei limiti della norma " + str(status['late']) + " minuti di ritardo (" + status['due'] + ").\n\r\n\rBuon viaggio"			
 		self._sendEmail(msg)
-		return late
+		return status['late']
 
 	def _sendEmail(self, msg):
 		# send emial
 		print "email: " + msg
 		try:
-			self.SMTPSERVER = self.config.get("EMAIL","SMTPSERVER")
-			self.SMTPUSER = self.config.get("EMAIL","SMTPUSER")
-			self.SMTPPASS = self.config.get("EMAIL","SMTPPASS")
-			self.FROMADDR = self.config.get("EMAIL","FROMADDR")
-			
+			self.SMTPSERVER = self.config.get("SMTP","SERVER")
+			self.SMTPUSER = self.config.get("SMTP","USER")
+			self.SMTPPASS = self.config.get("SMTP","PASS")
+			print 
 			server = smtplib.SMTP(self.SMTPSERVER)
 			server.set_debuglevel(1)
 			server.ehlo()
 			server.starttls()
 			server.ehlo()
 			server.login(self.SMTPUSER, self.SMTPPASS)
-			server.sendmail(self.FROMADDR, self.TOADDRS, msg)
+			server.sendmail(self.FROM, self.TO, msg)
 		except:
 			raise UnableToNotify ()
 
